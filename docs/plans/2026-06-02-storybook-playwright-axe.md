@@ -1,4 +1,4 @@
-# Vernacular: Phase 0e.1 Storybook, Playwright, axe-core, and Visual Regression Baselines Implementation Plan
+# Vernacular: Storybook, Playwright, axe-core, and Visual Regression Baselines Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -8,7 +8,7 @@
 
 **Tech Stack:** Storybook (`storybook`, `@storybook/react-vite`, `@storybook/addon-essentials`, `@storybook/test`), Playwright (`@playwright/test`), `@axe-core/playwright`. All under the 15-day cooldown; if a fresh transitive blocks install, STOP and report instead of expanding `.npmrc` silently (the exclusion list is governed by ADR-0013, and additions require an ADR amendment).
 
-**Scope boundary:** This plan does NOT add Lighthouse CI, Stryker mutation testing, the performance benchmark harness, or `tests/fixtures` and `tests/factories` scaffolds; those belong to Phase 0e.2. It does NOT introduce the Storybook test-runner integration that turns stories into Playwright tests (deferred to 0e.x as a follow-on once the component surface grows). It does NOT introduce source code from the six-layer skeleton (Phase 0f) or any user-facing flows (Phase 0g). It does NOT alter the existing Vitest unit-test setup beyond declaring a non-overlap with the new Playwright `e2e/` directory.
+**Scope boundary:** This plan does NOT add Lighthouse CI, Stryker mutation testing, the performance benchmark harness, or `tests/fixtures` and `tests/factories` scaffolds; those belong to a follow-on plan. It does NOT introduce the Storybook test-runner integration that turns stories into Playwright tests (deferred as a follow-on once the component surface grows). It does NOT introduce source code from the six-layer source skeleton (separate plan) or any user-facing flows (separate plan). It does NOT alter the existing Vitest unit-test setup beyond declaring a non-overlap with the new Playwright `e2e/` directory.
 
 ---
 
@@ -33,9 +33,8 @@
 | `.github/workflows/ci.yml`                                      | Add `storybook-build` job and `e2e` job (Chromium on PR, all 3 on main+tags)     |
 | `CONTRIBUTING.md`                                               | Storybook section, Playwright section, baseline-regeneration workflow            |
 | `docs/knowledge/decisions/ADR-0015-storybook-playwright-axe.md` | ADR documenting the choice and the visual-regression baseline strategy           |
-| `docs/knowledge/INDEX.md`, `docs/knowledge/index.json`          | Regenerated                                                                      |
-| `ROADMAP.md`                                                    | Mark 0d.2 done; mark 0e.1 in progress; split 0e into 0e.1 and 0e.2 if not done   |
-| `.superpowers/scratch/progress.md`                              | Update merge SHAs + Phase 0e.1 prep notes                                        |
+| `ROADMAP.md`                                                    | Move the in-progress marker to the storybook/playwright/axe row                  |
+| `.superpowers/scratch/progress.md`                              | Update merge SHAs and capture prep notes (gitignored)                            |
 
 ---
 
@@ -51,7 +50,7 @@ git branch --show-current
 git status --short
 ```
 
-Expected: directory is `/Users/dan/workspace/vernacular`, branch is `feat/phase-0e1-storybook-playwright-axe`, working tree is clean. If anything differs, STOP and report BLOCKED with what was found.
+Expected: directory is `/Users/dan/workspace/vernacular`, branch is `feat/storybook-playwright-axe`, working tree is clean. If anything differs, STOP and report BLOCKED with what was found.
 
 ---
 
@@ -585,7 +584,7 @@ Both should be clean.
 
 ### Task 13: Update CI workflow
 
-The existing `.github/workflows/ci.yml` has a single `check` job. Phase 0e.1 adds two more: `storybook-build` and `e2e`. The `e2e` job uses the Playwright container so baselines match the committed ones.
+The existing `.github/workflows/ci.yml` has a single `check` job. This plan adds two more: `storybook-build` and `e2e`. The `e2e` job uses the Playwright container so baselines match the committed ones.
 
 - [ ] **Step 1: Append the `storybook-build` job to `.github/workflows/ci.yml`**
 
@@ -685,7 +684,7 @@ e2e:
 
 Notes:
 
-- The matrix is intentionally Chromium-only on PR for cycle-time reasons. A follow-up plan (likely 0e.2 or 0e.3) introduces a conditional matrix expansion for Firefox + WebKit on `push: branches: [main]` and tag refs.
+- The matrix is intentionally Chromium-only on PR for cycle-time reasons. A follow-up plan introduces a conditional matrix expansion for Firefox + WebKit on `push: branches: [main]` and tag refs.
 - Browser installs run via `pnpm exec playwright install --with-deps chromium` implicitly when the runner image is the GitHub-hosted ubuntu-latest. If the implementer pulls the Playwright Docker image into the job (alternative pattern: `container: mcr.microsoft.com/playwright:v...`), the install step becomes a no-op. Choose ONE approach and document the choice in CONTRIBUTING.md.
 
 - [ ] **Step 3: Verify the workflow YAML is syntactically valid**
@@ -799,7 +798,7 @@ updated: 2026-06-02
 
 ## Status
 
-Accepted. Implemented in Phase 0e.1.
+Accepted.
 
 ## Context
 
@@ -810,13 +809,13 @@ The design spec's test pyramid (section 9) calls for:
 - Visual regression via Playwright's `toHaveScreenshot`, with Storybook stories doubling as baselines as the component surface grows.
 - Accessibility coverage via `@axe-core/playwright` on every page transition.
 
-Phase 0e.1 lands the scaffolding for all four with the minimal surface that proves each pipeline end-to-end. Phase 0e.2 brings Lighthouse, Stryker, performance benchmarks, and the fixtures/factories scaffolds. Later phases expand the visual regression matrix as real components arrive.
+This plan lands the scaffolding for all four with the minimal surface that proves each pipeline end-to-end. A follow-on plan brings Lighthouse, Stryker, performance benchmarks, and the fixtures/factories scaffolds. Later phases expand the visual regression matrix as real components arrive.
 
 ## Decision
 
 ### Storybook
 
-The framework is `@storybook/react-vite`. Configuration lives under `.storybook/main.ts` and `.storybook/preview.ts`; we hand-wrote both instead of running `storybook init` so we control the surface (no sample stories, no auto-added scripts beyond what we declared). Stories live next to their components (`src/**/*.stories.tsx`). The starter story for `App` proves the pipeline; expansion is component-driven from Phase 0g onward.
+The framework is `@storybook/react-vite`. Configuration lives under `.storybook/main.ts` and `.storybook/preview.ts`; we hand-wrote both instead of running `storybook init` so we control the surface (no sample stories, no auto-added scripts beyond what we declared). Stories live next to their components (`src/**/*.stories.tsx`). The starter story for `App` proves the pipeline; expansion is component-driven once real components arrive.
 
 Two scripts in `package.json`: `pnpm storybook` for the dev server, `pnpm build-storybook` for the static build (CI artifact, also the future deployment target).
 
@@ -828,7 +827,7 @@ CI matrix runs Chromium on PRs; Firefox and WebKit are wired into the config but
 
 ### axe-core
 
-`@axe-core/playwright` integrates into the E2E suite via `AxeBuilder`. The Phase 0e.1 surface is one test scanning the App shell. As real flows arrive (Phase 0g onward), each navigation in an E2E test pairs with an axe scan; any violation is a build break, and the fix is in the source, not the assertion.
+`@axe-core/playwright` integrates into the E2E suite via `AxeBuilder`. The initial surface is one test scanning the App shell. As real user flows arrive, each navigation in an E2E test pairs with an axe scan; any violation is a build break, and the fix is in the source, not the assertion.
 
 ### Visual regression baselines
 
@@ -868,23 +867,7 @@ Expected: no Prettier diff.
 
 ### Task 16: Update ROADMAP.md
 
-ROADMAP.md currently lists 0d.2 as "in progress" (stale from before merge). Update it to reflect the merged state and the new 0e split.
-
-- [ ] **Step 1: Edit ROADMAP.md**
-
-Make these two changes to the MVP-path table:
-
-1. Mark `0d.2` status from `in progress` to `done`.
-2. Replace the single `0e` row with two rows: `0e.1` (Storybook + Playwright + axe + visual regression baselines, status `in progress`) and `0e.2` (Lighthouse CI + Stryker + perf harness + fixtures/factories, status `next`). The original `0e` "next" row goes away.
-
-The updated subset of the table should read:
-
-```markdown
-| 0d.2 | Husky + commitlint + release-please + PR/issue templates | done |
-| 0e.1 | Storybook, Playwright, axe-core, visual regression baselines| in progress |
-| 0e.2 | Lighthouse CI, Stryker, perf harness, fixtures and factories| next |
-| 0f | Six-layer source skeleton | pending |
-```
+In the foundation work table, locate the row labeled "Storybook, Playwright, axe-core, visual regression baselines" and ensure its status is `in progress`. The row labeled "Lighthouse CI, Stryker, performance harness, fixtures and factories" should read `next`. Earlier rows stay `done`; later rows stay `pending`.
 
 - [ ] **Step 2: Verify Prettier-clean**
 
@@ -898,11 +881,11 @@ Expected: no diff. Tables in Markdown are Prettier-sensitive; if `pnpm format:ch
 
 ### Task 17: Update `.superpowers/scratch/progress.md`
 
-Append a new "Phase 0e.1 prep notes" block (model on the existing "Phase 0d prep notes" block). Update the "What's merged on main" table with the 0d.2 row (already there, leave as-is) and add a placeholder row for 0e.1 (status `branch open`, merge SHA blank for now). Update the sub-phase map at the bottom to mark 0e.1 `in progress` and to leave 0e.2 `next`.
+Append a new "Storybook + Playwright + axe + visual regression prep notes" block. Capture the chosen versions, the cooldown override (rollup pin), any axe remediations, and the Docker baseline workflow.
 
 - [ ] **Step 1: Edit the scratchpad**
 
-This file is gitignored; do not commit it. Just update it locally so the next loop iteration recovers context faster. Include in the Phase 0e.1 prep notes:
+This file is gitignored; do not commit it. Just update it locally so the next loop iteration recovers context faster. Include in the prep notes:
 
 - Storybook version chosen (8.x or 9.x).
 - Playwright version chosen.
@@ -1064,14 +1047,14 @@ git commit -m "docs: add ADR-0015 for Storybook, Playwright, axe-core, visual re
 - [ ] **Step 8: Push the branch and open the PR**
 
 ```
-git push -u origin feat/phase-0e1-storybook-playwright-axe
+git push -u origin feat/storybook-playwright-axe
 ```
 
 ```
-gh pr create --title "Phase 0e.1: Storybook, Playwright, axe-core, visual regression baselines" --body "$(cat <<'EOF'
+gh pr create --title "Storybook, Playwright, axe-core, and visual regression baselines" --body "$(cat <<'EOF'
 ## Summary
 
-Phase 0e.1 lands the testing scaffolds called for by the design spec's test pyramid:
+This branch lands the testing scaffolds called for by the design spec's test pyramid:
 
 - Storybook (`@storybook/react-vite`) with a starter `App.Shell` story; `pnpm storybook` and `pnpm build-storybook` scripts.
 - Playwright (`@playwright/test`) configured for Chromium, Firefox, and WebKit; tests under `e2e/tests/`.
@@ -1094,10 +1077,10 @@ Phase 0e.1 lands the testing scaffolds called for by the design spec's test pyra
 
 ## Out of scope
 
-- Lighthouse CI, Stryker, performance benchmark harness, `tests/fixtures` and `tests/factories` scaffolds (Phase 0e.2).
-- Storybook test-runner integration that turns stories into Playwright tests (Phase 0e.x follow-up once the component surface grows).
-- Firefox + WebKit in the CI matrix (Phase 0e.x follow-up; the Playwright config already supports the projects).
-- Source code for the six-layer architecture (Phase 0f).
+- Lighthouse CI, Stryker, performance benchmark harness, `tests/fixtures` and `tests/factories` scaffolds (follow-on plan).
+- Storybook test-runner integration that turns stories into Playwright tests (follow-up once the component surface grows).
+- Firefox + WebKit in the CI matrix (follow-up; the Playwright config already supports the projects).
+- Source code for the six-layer architecture (separate plan).
 EOF
 )"
 ```
@@ -1108,13 +1091,13 @@ Capture the PR URL.
 
 ## Rollback notes
 
-If a downstream phase needs to revert 0e.1 entirely:
+If a later branch needs to revert this work entirely:
 
 1. `git revert` the seven commits in reverse order (ADR, docs, CI, ignores, Playwright, Storybook, deps).
 2. Remove `e2e/tests/__screenshots__/` so future baselines do not collide with stale PNGs.
 3. Restore CI's single-job configuration (the original was a single `check` job).
 
-The cooldown exclusion list is untouched by 0e.1 (per the plan boundary: any new exclusion required an ADR-0013 amendment, which would be a separate PR), so no rollback is needed there.
+The cooldown exclusion list is untouched by this plan (per the boundary: any new exclusion required an ADR-0013 amendment, which would be a separate PR), so no rollback is needed there.
 
 ## Implementer expectations
 

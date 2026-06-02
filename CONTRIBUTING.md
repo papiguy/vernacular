@@ -88,8 +88,7 @@ These will tighten in later phases as the tooling lands. Current state:
 - **Commit messages** follow
   [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/).
   Common types we use: `feat`, `fix`, `refactor`, `docs`, `chore`,
-  `test`, `style`. Mechanical enforcement via `commitlint` lands in
-  Phase 0d.
+  `test`, `style`. Mechanical enforcement via `commitlint`.
 - **Code style** is enforced by ESLint and Prettier. Run
   `pnpm lint` and `pnpm format:check` before pushing; `pnpm format`
   fixes most issues automatically. The Clean Code rule set (function
@@ -103,14 +102,8 @@ These will tighten in later phases as the tooling lands. Current state:
   use the report to spot refactor opportunities.
 - **Tests** follow a behavior-first style: assert what the user
   experiences, not implementation details. The Vitest test in
-  `src/App.test.tsx` is the current model. Red-green-blue TDD becomes
-  a project-wide discipline in Phase 0c.
-- **Knowledge graph.** Significant architectural or workflow changes
-  should land alongside an entry under `docs/knowledge/` (a new ADR
-  for a new decision, an updated entry for an evolved one, etc.).
-  Run `pnpm knowledge:index` after you add or modify entries so the
-  generated `INDEX.md` and `index.json` reflect the change. CI fails
-  if these are out of date.
+  `src/App.test.tsx` is the current model. Red-green-blue TDD is the
+  project-wide discipline for application code.
 
 ## Pull request checklist
 
@@ -121,7 +114,7 @@ Before requesting review, make sure:
 - [ ] The PR description explains what changes and why, and includes a
       test plan.
 - [ ] New user-visible strings (when we have them) go through
-      `i18n.t()` (this becomes relevant from Phase 0g onward).
+      `i18n.t()` (this becomes relevant once the editor surface lands).
 - [ ] You have read and accept the project's license terms (Apache-2.0;
       see [`LICENSE`](LICENSE) and [`NOTICE`](NOTICE)).
 
@@ -141,8 +134,8 @@ review:
 
 Asset packs (3D models, textures, color palettes) and registry packs
 (element types, eras, trim profiles) ship through a separate workflow
-that will be documented in Phase 0d alongside the publishing CLI. Until
-then, propose contributions of this kind as issues with samples.
+that will be documented alongside the publishing CLI. Until then,
+propose contributions of this kind as issues with samples.
 
 ## Hooks and release engineering
 
