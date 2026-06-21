@@ -12,6 +12,8 @@ import {
   type Notification,
   type NotificationAction,
   type NotificationSeverity,
+  type PromiseMessage,
+  type PromiseMessages,
 } from './notification'
 import { emptyNotificationState, notificationReducer, type StoreAction } from './notification-store'
 
@@ -37,6 +39,7 @@ export interface NotificationApi {
   warning(message: string, options?: ToastOptions): string
   error(message: string, options?: ToastOptions): string
   banner(input: BannerInput): string
+  promise<T>(task: Promise<T>, messages: PromiseMessages<T>): Promise<T>
   dismiss(id: string): void
 }
 
@@ -77,6 +80,70 @@ function buildToast(
     ...(autoDismissMs !== undefined ? { autoDismissMs } : {}),
     ...(options.actions ? { actions: options.actions } : {}),
   }
+}
+
+// A promise message is either plain text or text plus actions; normalize to the object form.
+function resolveMessage(message: PromiseMessage): {
+  message: string
+  actions?: NotificationAction[]
+} {
+  return typeof message === 'string' ? { message } : message
+}
+
+// The pending toast is sticky (no auto-dismiss) and not dismissible while the task is in flight.
+function pendingToast(id: string, message: PromiseMessage): Notification {
+  return {
+    id,
+    tier: 'toast',
+    severity: 'info',
+    message: resolveMessage(message).message,
+    pending: true,
+    dismissible: false,
+  }
+}
+
+// The settled toast re-emits the same id; success fades on a timer, error stays until dismissed.
+function settledToast(
+  id: string,
+  outcome: { severity: NotificationSeverity; message: PromiseMessage; autoDismissMs?: number },
+): Notification {
+  const resolved = resolveMessage(outcome.message)
+  return {
+    id,
+    tier: 'toast',
+    severity: outcome.severity,
+    message: resolved.message,
+    dismissible: true,
+    ...(outcome.autoDismissMs !== undefined ? { autoDismissMs: outcome.autoDismissMs } : {}),
+    ...(resolved.actions ? { actions: resolved.actions } : {}),
+  }
+}
+
+// Wires a promise to a single toast: pending while in flight, then success or error on settle.
+function usePromise(emit: (notification: Notification) => string, nextId: () => string) {
+  return useCallback(
+    <T,>(task: Promise<T>, messages: PromiseMessages<T>): Promise<T> => {
+      const id = nextId()
+      emit(pendingToast(id, messages.pending))
+      task.then(
+        (value) => {
+          const message = messages.success(value)
+          emit(
+            settledToast(id, {
+              severity: 'success',
+              message,
+              autoDismissMs: DEFAULT_TOAST_DURATION_MS,
+            }),
+          )
+        },
+        (error: unknown) => {
+          emit(settledToast(id, { severity: 'error', message: messages.error(error) }))
+        },
+      )
+      return task
+    },
+    [emit, nextId],
+  )
 }
 
 type Dispatch = (action: StoreAction) => void
@@ -124,15 +191,17 @@ function useNotificationApi(): NotificationApi {
   const [state, dispatch] = useReducer(notificationReducer, emptyNotificationState)
   const counter = useRef(0)
   const { emit, dismiss } = useEmitter(dispatch)
+  const nextId = useCallback(() => `notification-${(counter.current += 1)}`, [])
 
   const toast = useCallback(
     (severity: NotificationSeverity, message: string, options: ToastOptions = {}) => {
-      counter.current += 1
-      const id = options.id ?? `notification-${counter.current}`
+      const id = options.id ?? nextId()
       return emit(buildToast(severity, message, { ...options, id }))
     },
-    [emit],
+    [emit, nextId],
   )
+
+  const promise = usePromise(emit, nextId)
 
   return useMemo<NotificationApi>(
     () => ({
@@ -142,8 +211,9 @@ function useNotificationApi(): NotificationApi {
       warning: (message, options) => toast('warning', message, options),
       error: (message, options) => toast('error', message, options),
       banner: (input) => emit({ ...input, tier: 'banner', dismissible: input.dismissible ?? true }),
+      promise,
       dismiss,
     }),
-    [state.notifications, toast, emit, dismiss],
+    [state.notifications, toast, emit, promise, dismiss],
   )
 }
