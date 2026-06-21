@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
 import { useProjectActions, type ProjectActionsContext } from './use-project-actions'
 import { type NotificationApi } from '../editor/design-system'
@@ -310,5 +310,51 @@ describe('useProjectActions import action discard guard', () => {
       'current',
       expect.objectContaining({ meta: expect.objectContaining({ name: 'My House' }) }),
     )
+  })
+})
+
+describe('useProjectActions export actions', () => {
+  // jsdom does not implement URL.createObjectURL/revokeObjectURL. The download helpers
+  // (downloadText/downloadBytes) call them, so stub both; otherwise the sync plan export
+  // throws and lands in its error branch instead of calling notifications.success.
+  beforeEach(() => {
+    URL.createObjectURL = vi.fn(() => 'blob:test')
+    URL.revokeObjectURL = vi.fn()
+  })
+
+  function exportContext(notifications: NotificationApi): ProjectActionsContext {
+    return {
+      session: createEditorSession(sampleProject()),
+      store: new InMemoryProjectStore(),
+      assets: new InMemoryAssetCache(),
+      projectId: 'current',
+      snapshots: undefined,
+      recentProjects: new InMemoryRecentProjectStore(),
+      capabilities: capableStorage,
+      recentEntries: [],
+      onSession: vi.fn(),
+      notifications,
+    }
+  }
+
+  it('shows a promise toast for a bundle export', () => {
+    const notifications = fakeNotifications()
+    const { result } = renderHook(() => useProjectActions(exportContext(notifications)))
+    act(() => {
+      result.current.onExportBundle()
+    })
+    expect(notifications.promise).toHaveBeenCalledWith(
+      expect.any(Promise),
+      expect.objectContaining({ pending: expect.stringMatching(/Exporting/) }),
+    )
+  })
+
+  it('shows a success toast for the synchronous plan export', () => {
+    const notifications = fakeNotifications()
+    const { result } = renderHook(() => useProjectActions(exportContext(notifications)))
+    act(() => {
+      result.current.onExportPlan()
+    })
+    expect(notifications.success).toHaveBeenCalledWith(expect.stringMatching(/Exported/))
   })
 })
