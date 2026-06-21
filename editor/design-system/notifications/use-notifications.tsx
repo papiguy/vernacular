@@ -96,6 +96,8 @@ function pendingToast(id: string, message: PromiseMessage): Notification {
     id,
     tier: 'toast',
     severity: 'info',
+    // Actions are intentionally omitted: a non-dismissible, in-flight pending toast has no surface
+    // for action buttons, so any actions on the pending message would be unreachable.
     message: resolveMessage(message).message,
     pending: true,
     dismissible: false,
@@ -125,6 +127,10 @@ function usePromise(emit: (notification: Notification) => string, nextId: () => 
     <T,>(task: Promise<T>, messages: PromiseMessages<T>): Promise<T> => {
       const id = nextId()
       emit(pendingToast(id, messages.pending))
+      // This .then only subscribes the toast to the task's settlement (a side-effect); we still
+      // return the original task so the caller receives the resolved value type T and can handle
+      // the rejection itself. Returning task.then(...) would change the resolved type to void and
+      // swallow the rejection from the caller.
       task.then(
         (value) => {
           const message = messages.success(value)
