@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
-import { renderHook, act } from '@testing-library/react'
+import { renderHook, act, waitFor } from '@testing-library/react'
 import { useProjectActions, type ProjectActionsContext } from './use-project-actions'
+import { type NotificationApi } from '../editor/design-system'
 import { createEditorSession } from '../bridge'
 import { createEmptyProject } from '../core'
 import { serializeProjectJson } from '../storage/folder/project-json'
@@ -26,6 +27,19 @@ const capableStorage: StorageCapabilities = {
   fileSystemAccess: false,
   persisted: false,
   estimatedQuotaBytes: null,
+}
+
+function fakeNotifications(): NotificationApi {
+  return {
+    notifications: [],
+    success: vi.fn(() => 'id'),
+    info: vi.fn(() => 'id'),
+    warning: vi.fn(() => 'id'),
+    error: vi.fn(() => 'id'),
+    banner: vi.fn(() => 'id'),
+    promise: vi.fn((task) => task),
+    dismiss: vi.fn(),
+  }
 }
 
 function jsonFileFor(project: ReturnType<typeof sampleProject>): File {
@@ -54,6 +68,7 @@ describe('useProjectActions new-project action', () => {
       onSession,
       isDirty,
       confirmDiscard,
+      notifications: fakeNotifications(),
     } as ProjectActionsContext
   }
 
@@ -90,6 +105,37 @@ describe('useProjectActions new-project action', () => {
   })
 })
 
+describe('useProjectActions save action', () => {
+  it('emits an error toast with Retry when save fails', async () => {
+    const notifications = fakeNotifications()
+    const store = new InMemoryProjectStore()
+    vi.spyOn(store, 'save').mockRejectedValue(new Error('disk full'))
+    const context: ProjectActionsContext = {
+      session: createEditorSession(sampleProject()),
+      store,
+      assets: new InMemoryAssetCache(),
+      projectId: 'current',
+      snapshots: undefined,
+      recentProjects: new InMemoryRecentProjectStore(),
+      capabilities: capableStorage,
+      recentEntries: [],
+      onSession: vi.fn(),
+      notifications,
+    }
+    const { result } = renderHook(() => useProjectActions(context))
+    act(() => {
+      result.current.onSave()
+    })
+    await waitFor(() => expect(notifications.error).toHaveBeenCalled())
+    expect(notifications.error).toHaveBeenCalledWith(
+      'disk full',
+      expect.objectContaining({
+        actions: [expect.objectContaining({ label: 'Retry' })],
+      }),
+    )
+  })
+})
+
 describe('useProjectActions import action', () => {
   it('activates, persists, and records a dropped project file', async () => {
     const project = sampleProject()
@@ -111,6 +157,7 @@ describe('useProjectActions import action', () => {
       capabilities: capableStorage,
       recentEntries: [],
       onSession,
+      notifications: fakeNotifications(),
     }
 
     const { result } = renderHook(() => useProjectActions(context))
@@ -140,6 +187,7 @@ describe('useProjectActions import action', () => {
       capabilities: capableStorage,
       recentEntries: [],
       onSession: vi.fn(),
+      notifications: fakeNotifications(),
     }
 
     const { result } = renderHook(() => useProjectActions(context))
@@ -181,6 +229,7 @@ describe('useProjectActions import action', () => {
       capabilities: capableStorage,
       recentEntries: [],
       onSession: vi.fn(),
+      notifications: fakeNotifications(),
     }
 
     const { result } = renderHook(() => useProjectActions(context))
@@ -215,6 +264,7 @@ describe('useProjectActions import action discard guard', () => {
       onSession,
       isDirty,
       confirmDiscard,
+      notifications: fakeNotifications(),
     }
   }
 
