@@ -23,3 +23,10 @@ export interface Notification {
 export const MAX_VISIBLE_TOASTS = 3
 /** Default lifetime for success and info toasts. Errors omit this and stay until dismissed. */
 export const DEFAULT_TOAST_DURATION_MS = 4000
+
+export type PromiseMessage = string | { message: string; actions?: NotificationAction[] }
+export interface PromiseMessages<T> {
+  pending: PromiseMessage
+  success: (value: T) => PromiseMessage
+  error: (error: unknown) => PromiseMessage
+}
