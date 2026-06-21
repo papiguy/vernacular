@@ -15,9 +15,7 @@ import { NotificationProvider, ThemeProvider } from '../editor/design-system'
 import {
   InMemoryAssetCache,
   InMemoryRecentProjectStore,
-  isStorageDegraded,
   probeStorageCapabilities,
-  summarizeStorageCapabilities,
   type AssetCache,
   type ProjectStorage,
   type ProjectStore,
@@ -33,6 +31,7 @@ import {
 } from '../core'
 import { createInitialProject } from './create-initial-project'
 import { resolveProjectStorage } from './resolve-project-store'
+import { useDegradedStorageBanner } from './use-degraded-storage-banner'
 import { useWorkspaceState } from './use-workspace-state'
 import { validateLoadedProject } from './validate-loaded-project'
 
@@ -170,6 +169,7 @@ function AppWorkspace({
     [providedRecentProjects],
   )
   const capabilities = useStorageCapabilities()
+  useDegradedStorageBanner(capabilities)
 
   if (error !== null) {
     return bootStatusView(error)
@@ -204,9 +204,6 @@ function useStorageCapabilities(): StorageCapabilities | null {
         return
       }
       setCapabilities(probed)
-      if (isStorageDegraded(probed)) {
-        console.warn(summarizeStorageCapabilities(probed))
-      }
     })
     return () => {
       cancelled = true
