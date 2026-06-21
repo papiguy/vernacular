@@ -79,18 +79,14 @@ describe('App boot and storage warnings', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(/could not open the project/i)
   })
 
-  it('warns once when booting into a storage-degraded environment', async () => {
+  it('raises a banner when booting into a storage-degraded environment', async () => {
     vi.stubGlobal('navigator', {})
     vi.stubGlobal('indexedDB', undefined)
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
     render(<App store={new InMemoryProjectStore()} />)
 
     await screen.findByRole('heading', { level: 1, name: /vernacular/i })
-    await waitFor(() =>
-      expect(warn).toHaveBeenCalledWith(expect.stringContaining('Storage capabilities')),
-    )
-    expect(warn).toHaveBeenCalledTimes(1)
+    expect(await screen.findByRole('alert')).toHaveTextContent(/storage/i)
   })
 
   it('stays silent when storage is healthy', async () => {
