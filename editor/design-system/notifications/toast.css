@@ -6,6 +6,7 @@
   display: flex;
   flex-direction: column-reverse;
   gap: var(--space-2);
+  /* ~22rem caps toast width for readability; there is no max-width token scale. */
   max-width: 22rem;
   pointer-events: none;
 }
@@ -63,6 +64,7 @@
   border: 2px solid var(--color-border);
   border-top-color: var(--color-accent);
   border-radius: var(--radius-pill);
+  /* 800ms is the deliberate spinner rotation rate. */
   animation: ds-toast-spin 0.8s linear infinite;
 }
 
@@ -88,6 +90,7 @@
     animation: none;
   }
   .ds-toast__spinner {
+    /* 2s is the slowed reduced-motion rotation rate. */
     animation-duration: 2s;
   }
 }

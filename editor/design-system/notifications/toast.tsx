@@ -13,9 +13,9 @@ export function Toast({ notification, onDismiss }: ToastProps) {
     <div className="ds-toast" data-severity={notification.severity} role={role}>
       {notification.pending ? <span className="ds-toast__spinner" aria-hidden="true" /> : null}
       <span className="ds-toast__message">{notification.message}</span>
-      {(notification.actions ?? []).map((action) => (
+      {(notification.actions ?? []).map((action, index) => (
         <button
-          key={action.label}
+          key={`${action.label}-${index}`}
           type="button"
           className="ds-toast__action"
           onClick={action.onAction}
@@ -37,13 +37,14 @@ export function Toast({ notification, onDismiss }: ToastProps) {
   )
 }
 
-// The anchored toast stack. The container is always mounted with aria-live so toasts inserted into
-// it announce; error toasts carry role="alert" for assertive announcement.
+// The anchored toast stack. Each toast announces itself via its own role (role="alert" is
+// assertive for errors, role="status" is polite otherwise). The region is a positioning
+// container only, with no wrapping aria-live that would override those per-toast politenesses.
 export function ToastRegion() {
   const { notifications, dismiss } = useNotifications()
   const toasts = notifications.filter((n) => n.tier === 'toast')
   return (
-    <div className="ds-toast-region" aria-live="polite" aria-relevant="additions">
+    <div className="ds-toast-region">
       {toasts.map((notification) => (
         <Toast key={notification.id} notification={notification} onDismiss={dismiss} />
       ))}
