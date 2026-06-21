@@ -13,6 +13,7 @@ import {
 } from '../../bridge'
 import { createEmptyProject, createFloor, type Project } from '../../core'
 import { ThemeProvider } from '../design-system'
+import { NotificationProvider } from '../design-system/notifications/use-notifications'
 import { PAINT_PICKER_SLOT, PAINT_INSPECTOR_SLOT } from './shell-panel-slots'
 
 function projectWithFloor(): Project {
@@ -31,17 +32,19 @@ function renderShell(props: Partial<EditorShellProps> = {}) {
   const selection = createSelectionStore()
   const activeFloor = createActiveFloorStore(session.getProject().floors[0]?.id ?? null)
   render(
-    <ThemeProvider>
-      <EditorSessionProvider session={session}>
-        <SelectionProvider store={selection}>
-          <ActiveFloorProvider store={activeFloor}>
-            <ActiveToolProvider>
-              <EditorShell saveStatus="idle" {...props} />
-            </ActiveToolProvider>
-          </ActiveFloorProvider>
-        </SelectionProvider>
-      </EditorSessionProvider>
-    </ThemeProvider>,
+    <NotificationProvider>
+      <ThemeProvider>
+        <EditorSessionProvider session={session}>
+          <SelectionProvider store={selection}>
+            <ActiveFloorProvider store={activeFloor}>
+              <ActiveToolProvider>
+                <EditorShell saveStatus="idle" {...props} />
+              </ActiveToolProvider>
+            </ActiveFloorProvider>
+          </SelectionProvider>
+        </EditorSessionProvider>
+      </ThemeProvider>
+    </NotificationProvider>,
   )
   return { session, selection }
 }
