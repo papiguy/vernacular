@@ -106,6 +106,26 @@ function runWithErrorToast(notifications: NotificationApi, op: () => Promise<voi
   })
 }
 
+// Wrap an async export in a promise toast: an indeterminate pending toast while it runs, a success
+// toast naming the file, or an error toast whose Retry re-runs the export.
+function runExportWithToast(
+  notifications: NotificationApi,
+  name: string,
+  run: () => Promise<unknown>,
+): void {
+  const attempt = (): void => {
+    void notifications.promise(run(), {
+      pending: `Exporting ${name}...`,
+      success: () => `Exported ${name}`,
+      error: (error) => ({
+        message: `Export failed: ${humanMessage(error)}`,
+        actions: [{ label: 'Retry', onAction: attempt }],
+      }),
+    })
+  }
+  attempt()
+}
+
 export interface ProjectActions {
   onSave: () => void
   onOpenRecent: (id: string) => void
@@ -162,44 +182,55 @@ function useSaveAction(context: ProjectActionsContext): () => void {
 }
 
 function useExportBundleAction(context: ProjectActionsContext): () => void {
-  const { session, projectId, assets } = context
+  const { session, projectId, assets, notifications } = context
   return useCallback(() => {
     const project = session.getProject()
-    void exportProjectBundle(projectId, project, assets)
-      .then((bytes) => downloadBytes(bytes, bundleFilename(project.meta.name)))
-      .catch((error: unknown) => console.error('export bundle failed', error))
-  }, [session, projectId, assets])
+    const name = bundleFilename(project.meta.name)
+    runExportWithToast(notifications, name, () =>
+      exportProjectBundle(projectId, project, assets).then((bytes) => downloadBytes(bytes, name)),
+    )
+  }, [session, projectId, assets, notifications])
 }
 
 function useExportPlanAction(context: ProjectActionsContext): () => void {
-  const { session } = context
+  const { session, notifications } = context
   return useCallback(() => {
     const project = session.getProject()
-    const { content } = new SvgPlanExporter().export(project)
-    downloadText(content, svgPlanFilename(project.meta.name), 'image/svg+xml')
-  }, [session])
+    const name = svgPlanFilename(project.meta.name)
+    try {
+      const { content } = new SvgPlanExporter().export(project)
+      downloadText(content, name, 'image/svg+xml')
+      notifications.success(`Exported ${name}`)
+    } catch (error) {
+      notifications.error(`Export failed: ${humanMessage(error)}`)
+    }
+  }, [session, notifications])
 }
 
 function useExportImageAction(context: ProjectActionsContext): () => void {
-  const { session } = context
+  const { session, notifications } = context
   return useCallback(() => {
     const project = session.getProject()
+    const name = pngPlanFilename(project.meta.name)
     const { content } = new SvgPlanExporter().export(project)
-    void rasterizeSvgToPng(content, DEFAULT_RASTER_MAX_EDGE)
-      .then((png) => downloadBytes(png, pngPlanFilename(project.meta.name)))
-      .catch((error: unknown) => console.error('export PNG failed', error))
-  }, [session])
+    runExportWithToast(notifications, name, () =>
+      rasterizeSvgToPng(content, DEFAULT_RASTER_MAX_EDGE).then((png) => downloadBytes(png, name)),
+    )
+  }, [session, notifications])
 }
 
 function useExportPdfAction(context: ProjectActionsContext): () => void {
-  const { session } = context
+  const { session, notifications } = context
   return useCallback(() => {
     const project = session.getProject()
+    const name = pdfPlanFilename(project.meta.name)
     const { content } = new SvgPlanExporter().export(project)
-    void svgPlanToPdf(content, { units: project.meta.units, maxEdge: PRINT_RASTER_MAX_EDGE })
-      .then((pdf) => downloadBytes(pdf, pdfPlanFilename(project.meta.name)))
-      .catch((error: unknown) => console.error('export PDF failed', error))
-  }, [session])
+    runExportWithToast(notifications, name, () =>
+      svgPlanToPdf(content, { units: project.meta.units, maxEdge: PRINT_RASTER_MAX_EDGE }).then(
+        (pdf) => downloadBytes(pdf, name),
+      ),
+    )
+  }, [session, notifications])
 }
 
 function useNewProjectAction(context: ProjectActionsContext): () => void | Promise<void> {
