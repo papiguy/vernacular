@@ -10,6 +10,7 @@ import {
 } from '../storage'
 import { createEditorSession } from '../bridge'
 import { addFloor, createEmptyProject, createFloor, createWall, type Project } from '../core'
+import { NotificationProvider } from '../editor/design-system'
 
 function stubCapableStorage() {
   vi.stubGlobal('navigator', { storage: { getDirectory: () => Promise.resolve({}) } })
@@ -303,16 +304,18 @@ describe('App unsaved-changes guard', () => {
     const onSession = vi.fn()
 
     render(
-      <EditorWorkspace
-        session={session}
-        store={store}
-        assets={new InMemoryAssetCache()}
-        projectId="current"
-        recentProjects={new InMemoryRecentProjectStore()}
-        capabilities={capableCapabilities()}
-        snapshots={undefined}
-        onSession={onSession}
-      />,
+      <NotificationProvider>
+        <EditorWorkspace
+          session={session}
+          store={store}
+          assets={new InMemoryAssetCache()}
+          projectId="current"
+          recentProjects={new InMemoryRecentProjectStore()}
+          capabilities={capableCapabilities()}
+          snapshots={undefined}
+          onSession={onSession}
+        />
+      </NotificationProvider>,
     )
 
     await screen.findByRole('heading', { level: 1, name: /vernacular/i })
@@ -348,16 +351,18 @@ describe('App unsaved-changes guard', () => {
     const session = createEditorSession(projectWithWalls('Drafthouse', 0))
 
     render(
-      <EditorWorkspace
-        session={session}
-        store={store}
-        assets={new InMemoryAssetCache()}
-        projectId="current"
-        recentProjects={new InMemoryRecentProjectStore()}
-        capabilities={capableCapabilities()}
-        snapshots={undefined}
-        onSession={vi.fn()}
-      />,
+      <NotificationProvider>
+        <EditorWorkspace
+          session={session}
+          store={store}
+          assets={new InMemoryAssetCache()}
+          projectId="current"
+          recentProjects={new InMemoryRecentProjectStore()}
+          capabilities={capableCapabilities()}
+          snapshots={undefined}
+          onSession={vi.fn()}
+        />
+      </NotificationProvider>,
     )
 
     await screen.findByRole('heading', { level: 1, name: /vernacular/i })

@@ -49,7 +49,7 @@ import { ToolsPanel } from '../tools/tools-panel'
 import { ViewModeProvider, useViewMode } from '../viewport/view-mode'
 import { ViewOverlayProvider, useViewOverlay } from '../viewport/view-overlay-context'
 import { ViewModeViewport } from '../viewport/view-mode-viewport'
-import { AppFrame, IconButton } from '../design-system'
+import { AppFrame, BannerRegion, IconButton, ToastRegion } from '../design-system'
 import { BrandMark } from './brand-mark'
 import { ExportMenu } from './export-menu'
 import { Inspector } from './inspector'
@@ -321,6 +321,7 @@ export function EditorShell({ saveStatus, recovery, ...projectControls }: Editor
                     <FurniturePlacementProvider>
                       <KeybindingLayer />
                       <CommandPalette />
+                      <ToastRegion />
                       {recovery ? (
                         <RecoveryPrompt
                           onRestore={recovery.onRestore}
@@ -343,6 +344,7 @@ export function EditorShell({ saveStatus, recovery, ...projectControls }: Editor
                               projectControls={projectControls}
                             />
                           }
+                          banner={<BannerRegion />}
                           railLabel="Tool rail"
                           rail={<ToolRail />}
                           mainLabel="Viewport"

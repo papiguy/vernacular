@@ -11,7 +11,7 @@ import {
 } from '../bridge'
 import { ActiveToolProvider, DiscardDialog, EditorShell } from '../editor'
 import { AssetProviders } from './asset-providers'
-import { ThemeProvider } from '../editor/design-system'
+import { NotificationProvider, ThemeProvider } from '../editor/design-system'
 import {
   InMemoryAssetCache,
   InMemoryRecentProjectStore,
@@ -141,7 +141,14 @@ export function App(props: AppProps) {
       />
     )
   }
-  return <AppWorkspace {...props} />
+  // The notification provider wraps AppWorkspace (not a tree inside EditorWorkspace) so every emit
+  // site sits under it: the storage check in AppWorkspace's body and the file-op hooks in
+  // EditorWorkspace's body both run above their returned trees, so the provider must be their ancestor.
+  return (
+    <NotificationProvider>
+      <AppWorkspace {...props} />
+    </NotificationProvider>
+  )
 }
 
 function AppWorkspace({
