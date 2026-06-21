@@ -7,6 +7,7 @@ import './app-frame.css'
 
 export interface AppFrameProps {
   header: ReactNode
+  banner?: ReactNode
   rail: ReactNode
   railLabel: string
   main: ReactNode
@@ -122,6 +123,7 @@ function NarrowNotice({ railLabel }: { railLabel: string }) {
 
 export function AppFrame({
   header,
+  banner,
   rail,
   railLabel,
   main,
@@ -143,6 +145,7 @@ export function AppFrame({
       <header className="ds-app-frame__header" role="banner">
         {header}
       </header>
+      <div className="ds-app-frame__banner">{banner}</div>
       <RailDisclosureToggle railLabel={railLabel} open={railOpen} setOpen={setRailOpen} />
       <NarrowNotice railLabel={railLabel} />
       <CollapsiblePane area="rail" label={railLabel} id={RAIL_ID}>
