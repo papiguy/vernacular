@@ -193,6 +193,34 @@ function useEmitter(dispatch: Dispatch) {
   return { emit, dismiss }
 }
 
+// Holds the stable callbacks the emitter API wraps. Bundled into one object so the consuming hook
+// stays within the max-params limit.
+interface ApiCallbacks {
+  toast: (severity: NotificationSeverity, message: string, options?: ToastOptions) => string
+  emit: (notification: Notification) => string
+  promise: <T>(task: Promise<T>, messages: PromiseMessages<T>) => Promise<T>
+  dismiss: (id: string) => void
+}
+
+// Memoizes the emitter methods over only the stable callbacks, so each method reference stays
+// constant across renders. A consumer can list a method in a useEffect dependency array without the
+// effect re-firing whenever the notification list changes.
+function useApiMethods({ toast, emit, promise, dismiss }: ApiCallbacks) {
+  return useMemo(
+    () => ({
+      success: (message: string, options?: ToastOptions) => toast('success', message, options),
+      info: (message: string, options?: ToastOptions) => toast('info', message, options),
+      warning: (message: string, options?: ToastOptions) => toast('warning', message, options),
+      error: (message: string, options?: ToastOptions) => toast('error', message, options),
+      banner: (input: BannerInput) =>
+        emit({ ...input, tier: 'banner', dismissible: input.dismissible ?? true }),
+      promise,
+      dismiss,
+    }),
+    [toast, emit, promise, dismiss],
+  )
+}
+
 function useNotificationApi(): NotificationApi {
   const [state, dispatch] = useReducer(notificationReducer, emptyNotificationState)
   const counter = useRef(0)
@@ -208,18 +236,10 @@ function useNotificationApi(): NotificationApi {
   )
 
   const promise = usePromise(emit, nextId)
+  const methods = useApiMethods({ toast, emit, promise, dismiss })
 
   return useMemo<NotificationApi>(
-    () => ({
-      notifications: state.notifications,
-      success: (message, options) => toast('success', message, options),
-      info: (message, options) => toast('info', message, options),
-      warning: (message, options) => toast('warning', message, options),
-      error: (message, options) => toast('error', message, options),
-      banner: (input) => emit({ ...input, tier: 'banner', dismissible: input.dismissible ?? true }),
-      promise,
-      dismiss,
-    }),
-    [state.notifications, toast, emit, promise, dismiss],
+    () => ({ notifications: state.notifications, ...methods }),
+    [state.notifications, methods],
   )
 }
