@@ -1,22 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
-import { SvgPlanExporter } from '../core'
 import { commitProject, createEditorSession, guardDestructive, type EditorSession } from '../bridge'
 import {
   DirectoryHandleStore,
   FileSystemFolderProjectStore,
-  exportProjectBundle,
-  bundleFilename,
-  downloadBytes,
-  downloadText,
   orderRecentProjects,
-  pngPlanFilename,
-  pdfPlanFilename,
-  rasterizeSvgToPng,
   recentEntryFor,
-  svgPlanFilename,
-  svgPlanToPdf,
-  DEFAULT_RASTER_MAX_EDGE,
-  PRINT_RASTER_MAX_EDGE,
   type AssetCache,
   type ProjectBackend,
   type ProjectStore,
@@ -25,6 +13,12 @@ import {
 } from '../storage'
 import { humanMessage, type NotificationApi } from '../editor/design-system'
 import { createInitialProject } from './create-initial-project'
+import {
+  useExportBundleAction,
+  useExportImageAction,
+  useExportPdfAction,
+  useExportPlanAction,
+} from './use-export-actions'
 import { useOpenFileAction, type ImportStatus } from './use-open-file-action'
 import type { SnapshotsPort } from './app'
 
@@ -106,26 +100,6 @@ function runWithErrorToast(notifications: NotificationApi, op: () => Promise<voi
   })
 }
 
-// Wrap an async export in a promise toast: an indeterminate pending toast while it runs, a success
-// toast naming the file, or an error toast whose Retry re-runs the export.
-function runExportWithToast(
-  notifications: NotificationApi,
-  name: string,
-  run: () => Promise<unknown>,
-): void {
-  const attempt = (): void => {
-    void notifications.promise(run(), {
-      pending: `Exporting ${name}...`,
-      success: () => `Exported ${name}`,
-      error: (error) => ({
-        message: `Export failed: ${humanMessage(error)}`,
-        actions: [{ label: 'Retry', onAction: attempt }],
-      }),
-    })
-  }
-  attempt()
-}
-
 export interface ProjectActions {
   onSave: () => void
   onOpenRecent: (id: string) => void
@@ -179,58 +153,6 @@ function useSaveAction(context: ProjectActionsContext): () => void {
       markSaved?.()
     })
   }, [session, store, projectId, snapshots, recentProjects, backend, markSaved, notifications])
-}
-
-function useExportBundleAction(context: ProjectActionsContext): () => void {
-  const { session, projectId, assets, notifications } = context
-  return useCallback(() => {
-    const project = session.getProject()
-    const name = bundleFilename(project.meta.name)
-    runExportWithToast(notifications, name, () =>
-      exportProjectBundle(projectId, project, assets).then((bytes) => downloadBytes(bytes, name)),
-    )
-  }, [session, projectId, assets, notifications])
-}
-
-function useExportPlanAction(context: ProjectActionsContext): () => void {
-  const { session, notifications } = context
-  return useCallback(() => {
-    const project = session.getProject()
-    const name = svgPlanFilename(project.meta.name)
-    try {
-      const { content } = new SvgPlanExporter().export(project)
-      downloadText(content, name, 'image/svg+xml')
-      notifications.success(`Exported ${name}`)
-    } catch (error) {
-      notifications.error(`Export failed: ${humanMessage(error)}`)
-    }
-  }, [session, notifications])
-}
-
-function useExportImageAction(context: ProjectActionsContext): () => void {
-  const { session, notifications } = context
-  return useCallback(() => {
-    const project = session.getProject()
-    const name = pngPlanFilename(project.meta.name)
-    const { content } = new SvgPlanExporter().export(project)
-    runExportWithToast(notifications, name, () =>
-      rasterizeSvgToPng(content, DEFAULT_RASTER_MAX_EDGE).then((png) => downloadBytes(png, name)),
-    )
-  }, [session, notifications])
-}
-
-function useExportPdfAction(context: ProjectActionsContext): () => void {
-  const { session, notifications } = context
-  return useCallback(() => {
-    const project = session.getProject()
-    const name = pdfPlanFilename(project.meta.name)
-    const { content } = new SvgPlanExporter().export(project)
-    runExportWithToast(notifications, name, () =>
-      svgPlanToPdf(content, { units: project.meta.units, maxEdge: PRINT_RASTER_MAX_EDGE }).then(
-        (pdf) => downloadBytes(pdf, name),
-      ),
-    )
-  }, [session, notifications])
 }
 
 function useNewProjectAction(context: ProjectActionsContext): () => void | Promise<void> {
