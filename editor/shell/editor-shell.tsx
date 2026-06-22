@@ -63,6 +63,7 @@ import { ZoomControl } from './zoom-control'
 import { ProjectControls, RecoveryPrompt, type ProjectControlsProps } from './project-controls'
 import { ProjectMenu } from './project-menu'
 import { ScenePane } from './scene-pane'
+import { useSaveFailureToast } from './use-save-failure-toast'
 import { ImportDropTarget } from './import-drop-target'
 import { UnitToggle } from './unit-toggle'
 import './editor-shell.css'
@@ -303,6 +304,7 @@ export function EditorShell({ saveStatus, recovery, ...projectControls }: Editor
   // palette, the snap panel, and the plan's snapping all read one source, persisted
   // to localStorage as an editor preference.
   const snapPreferences = useMemo(() => createSnapPreferencesStore(), [])
+  useSaveFailureToast(saveStatus)
   return (
     // The command-palette provider wraps everything so the keybinding layer, the
     // command bar, and the palette dialog all share one open/close state. The
