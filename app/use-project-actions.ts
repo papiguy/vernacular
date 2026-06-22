@@ -19,10 +19,8 @@ import {
   useExportPdfAction,
   useExportPlanAction,
 } from './use-export-actions'
-import { useOpenFileAction, type ImportStatus } from './use-open-file-action'
+import { useOpenFileAction } from './use-open-file-action'
 import type { SnapshotsPort } from './app'
-
-export type { ImportStatus }
 
 export interface RecentEntry {
   id: string
@@ -111,8 +109,6 @@ export interface ProjectActions {
   onOpenFolder?: () => void
   onImportDroppedFile?: (file: File) => void | Promise<void>
   onOpenFile?: () => void
-  importStatus?: ImportStatus | null
-  dismissImportStatus?: () => void
 }
 
 export function useProjectActions(context: ProjectActionsContext): ProjectActions {

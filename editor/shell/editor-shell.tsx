@@ -63,7 +63,6 @@ import { ZoomControl } from './zoom-control'
 import { ProjectControls, RecoveryPrompt, type ProjectControlsProps } from './project-controls'
 import { ProjectMenu } from './project-menu'
 import { ScenePane } from './scene-pane'
-import { ImportAlert } from './import-alert'
 import { ImportDropTarget } from './import-drop-target'
 import { UnitToggle } from './unit-toggle'
 import './editor-shell.css'
@@ -328,13 +327,6 @@ export function EditorShell({ saveStatus, recovery, ...projectControls }: Editor
                           onDiscard={recovery.onDiscard}
                         />
                       ) : null}
-                      <ImportAlert
-                        status={projectControls.importStatus ?? null}
-                        // Spread onDismiss only when present: the optional prop rejects an explicit undefined.
-                        {...(projectControls.onDismissImportStatus
-                          ? { onDismiss: projectControls.onDismissImportStatus }
-                          : {})}
-                      />
                       <SurfaceSelectionProvider store={surfaceSelection}>
                         <EntitySurfaceBridge />
                         <AppFrame
