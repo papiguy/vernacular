@@ -306,7 +306,7 @@ describe('EditorShell', () => {
     expect(screen.queryByRole('button', { name: /discard/i })).toBeNull()
   })
 
-  it('shows the open-file menu item, the import alert, and a viewport drop target', async () => {
+  it('shows the open-file menu item and a viewport drop target', async () => {
     vi.stubGlobal('navigator', {})
     const user = userEvent.setup()
 
@@ -314,13 +314,11 @@ describe('EditorShell', () => {
       onNewProject: vi.fn(),
       onOpenFile: vi.fn(),
       onImportDroppedFile: vi.fn(),
-      importStatus: { fileName: 'x.building', reason: 'corrupt' },
     })
 
     await user.click(screen.getByRole('button', { name: /project/i }))
     expect(screen.getByRole('menuitem', { name: /open file/i })).toBeInTheDocument()
 
-    expect(screen.getByRole('alert')).toHaveTextContent(/x\.building/)
     expect(screen.getByTestId('import-drop-target')).toBeInTheDocument()
   })
 

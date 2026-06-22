@@ -176,7 +176,8 @@ describe('useProjectActions import action', () => {
     expect(record).toHaveBeenCalled()
   })
 
-  it('surfaces an import status when the router rejects a file and clears it on dismiss', async () => {
+  it('emits an error toast naming the file when import fails', async () => {
+    const notifications = fakeNotifications()
     const context: ProjectActionsContext = {
       session: createEditorSession(sampleProject()),
       store: new InMemoryProjectStore(),
@@ -187,63 +188,18 @@ describe('useProjectActions import action', () => {
       capabilities: capableStorage,
       recentEntries: [],
       onSession: vi.fn(),
-      notifications: fakeNotifications(),
+      notifications,
     }
 
     const { result } = renderHook(() => useProjectActions(context))
-    const actions = () =>
-      result.current as {
-        onImportDroppedFile: (file: File) => Promise<void> | void
-        importStatus: { fileName: string; reason: string } | null
-        dismissImportStatus: () => void
-      }
-
-    const textFile = new File([new Uint8Array()], 'notes.txt')
-    await act(async () => {
-      await expect(
-        Promise.resolve(actions().onImportDroppedFile(textFile)),
-      ).resolves.toBeUndefined()
-    })
-
-    expect(actions().importStatus).toEqual({
-      fileName: 'notes.txt',
-      reason: expect.any(String),
-    })
-    expect((actions().importStatus as { reason: string }).reason.length).toBeGreaterThan(0)
-
-    act(() => {
-      actions().dismissImportStatus()
-    })
-
-    expect(actions().importStatus).toBeNull()
-  })
-
-  it('leaves the import status null after a successful import', async () => {
-    const context: ProjectActionsContext = {
-      session: createEditorSession(sampleProject()),
-      store: new InMemoryProjectStore(),
-      assets: new InMemoryAssetCache(),
-      projectId: 'current',
-      snapshots: undefined,
-      recentProjects: new InMemoryRecentProjectStore(),
-      capabilities: capableStorage,
-      recentEntries: [],
-      onSession: vi.fn(),
-      notifications: fakeNotifications(),
-    }
-
-    const { result } = renderHook(() => useProjectActions(context))
-    const actions = () =>
-      result.current as {
-        onImportDroppedFile: (file: File) => Promise<void> | void
-        importStatus: { fileName: string; reason: string } | null
-      }
 
     await act(async () => {
-      await actions().onImportDroppedFile(jsonFileFor(sampleProject()))
+      await (
+        result.current as { onImportDroppedFile: (file: File) => Promise<void> | void }
+      ).onImportDroppedFile(new File(['not a project'], 'broken.building'))
     })
 
-    expect(actions().importStatus).toBeNull()
+    expect(notifications.error).toHaveBeenCalledWith(expect.stringContaining('broken.building'))
   })
 })
 
